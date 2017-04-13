@@ -1,11 +1,7 @@
 package mcm.fhooe.at.textprediction;
 
 import android.app.Activity;
-import android.os.AsyncTask;
-import android.util.Log;
 import android.util.Xml;
-import android.webkit.HttpAuthHandler;
-
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import java.io.IOException;
@@ -42,9 +38,10 @@ public class CorpusParser{
         }
 
         for (String s : alltext) {
-            String[] parts = s.split("[\\W]");
+            String[] parts = s.split("[\\W]"); //at the moment everyhting that is not a character will be used as delimiter
             for (int i = 0; i < parts.length; i++) {
-                if(i == parts.length -1){ // letztes element
+                if(i == parts.length -1){// do nothing when last element is reached
+
                 }else{ // alle anderen elemente
                     if(map.get(parts[i])!=null){ //wort is scho drinnen
                         HashMap inner = (HashMap) map.get(parts[i]);
@@ -55,29 +52,14 @@ public class CorpusParser{
                         }
                        // ((HashMap)map.get(parts[i])).put(parts[i+1],null);
                     }else{
-                        HashMap inner = new HashMap<String, Integer>();
-                        inner.put(parts[i+1],1);
-                        map.put(parts[i],inner);
+                            HashMap inner = new HashMap<String, Integer>();
+                            inner.put(parts[i+1],1);
+                            map.put(parts[i],inner);
                     }
                 }
             }
         }
         return map;
-    }
-
-    public void putIntoWordList(ArrayList<Word> list, String actual, String following, boolean first) {
-
-        for (Word w : list) {
-            if (w.word!=null && w.word.equalsIgnoreCase(actual)) {
-                w.count += 1;
-                if (first) {
-                //    putIntoWordList(w.followingWords, following, null, false);
-                }
-                return;
-            }
-        }
-        Word w = new Word(actual, following);
-        list.add(w);
     }
 
     public List parse(InputStream in) throws XmlPullParserException, IOException {

@@ -7,6 +7,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
+import android.view.animation.Interpolator;
 import android.widget.Button;
 import android.widget.EditText;
 
@@ -15,14 +16,18 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.TreeMap;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, TextWatcher {
 
-    Button b1, b2 ,b3;
-    String s1, s2, s3;
+    Button b1, b2, b3;
     EditText editText;
     HashMap map;
 
@@ -31,15 +36,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-
+        
         b1 = (Button) findViewById(R.id.button1);
         b1.setOnClickListener(this);
         b2 = (Button) findViewById(R.id.button2);
         b2.setOnClickListener(this);
         b3 = (Button) findViewById(R.id.button3);
         b3.setOnClickListener(this);
-        editText =(EditText)findViewById(R.id.editText2);
+        editText = (EditText) findViewById(R.id.editText2);
         editText.addTextChangedListener(this);
 
         final CorpusParser parser = new CorpusParser(this);
@@ -48,7 +52,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Thread thread = new Thread() {
             @Override
             public void run() {
-              map = parser.loadData();
+                map = parser.loadData();
             }
         };
         thread.run();
@@ -57,18 +61,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick(View view) {
         Button b = (Button) view;
-        if(b.getText().length()==0){
+        if (b.getText().length() == 0) {
             return;
         }
-        switch (view.getId()){
+        switch (view.getId()) {
             case R.id.button1:
-                editText.append(b1.getText());
+                if(b1.getText().equals(" ")){
+                }else{
+                    editText.append(b1.getText() + " ");
+                }
                 break;
             case R.id.button2:
-                editText.append(b2.getText());
+                if(b2.getText().equals(" ")){
+                }else{
+                    editText.append(b2.getText() + " ");
+                }
                 break;
             case R.id.button3:
-                editText.append(b3.getText());
+                if(b3.getText().equals(" ")){
+                }else{
+                    editText.append(b3.getText() + " ");
+                }
                 break;
         }
     }
@@ -79,65 +92,75 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     @Override
-    public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-        if(charSequence.length()>0){
+    public void onTextChanged(CharSequence charSequence, int text1, int text2, int text3) {
+        if (charSequence.length() > 0) {
 
             String s = charSequence.toString();
-            char last = charSequence.charAt(charSequence.length()-1);
+            char last = charSequence.charAt(charSequence.length() - 1);
             String[] arr = s.split("[\\W]");
-            //String[] arr = s.split(" ");
-            String actual = arr[arr.length-1];
-            Log.i("CHAR", s);
-            Log.i("LAST", last+".");
-            if(last == ' '){
+            String actual = arr[arr.length - 1];
 
-                Log.i("IMPORTANT","calld");
-                HashMap actualmap =(HashMap) map.get(actual);
-                ValueComparator bvc = new ValueComparator(actualmap);
-                TreeMap<String, Integer> sm = new TreeMap<String, Integer>(bvc);
+            if (last == ' ') {
+                HashMap actualmap = (HashMap) map.get(actual);
+                String[] prediction = new String[]{" ", " ", " "};
 
+                if (actualmap != null) {
+                    HashMap sorted = sortByValues(actualmap);
+                    Log.i("sorted",sorted.toString());
+                    Iterator iterator = sorted.entrySet().iterator();
+                    Map.Entry<String, Integer> m1;
 
-                //TODO:check somehow why the treemap is empty
-                b2.setText(sm.firstKey());
-                sm.remove(sm.firstKey());
-                b1.setText(sm.firstKey());
-                sm.remove(sm.firstKey());
-                b3.setText(sm.firstKey());
-                sm.remove(sm.firstKey());
+                    String w1= " ";
+                    for (int i = 0; i <= 2; i++) {
+                        if (iterator.hasNext()) {
+                            m1 = (Map.Entry<String, Integer>) iterator.next();
+                            w1 = m1.getKey();
 
+                            while (w1.length() <= 0 && !containsAlready(prediction, w1) && iterator.hasNext()) {
+                                if(iterator.hasNext()){
+                                    m1 = (Map.Entry<String, Integer>) iterator.next();
+                                    w1 = m1.getKey();
+                                }
+                            }
+                        }
+                        prediction[i] = w1;
+                    }
+                }
+                b1.setText(prediction[1]);
+                b2.setText(prediction[0]);
+                b3.setText(prediction[2]);
             }
-
-
         }
+    }
 
+    private boolean containsAlready(String[] arr, String string) {
+        for (String s : arr) {
+            if (s.equalsIgnoreCase(string)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
-        /*if(actual.length()>=1){
-            String c =  String.valueOf(actual.charAt(0));
-            ArrayList<String> filtered = new ArrayList<String>();
-        }*/
+    private static HashMap sortByValues(HashMap map) {
+        List list = new LinkedList(map.entrySet());
+
+        Collections.sort(list, new Comparator() {
+            public int compare(Object o1, Object o2) {
+                return ((Comparable) ((Map.Entry) (o2)).getValue()).compareTo(((Map.Entry) (o1)).getValue());
+            }
+        });
+
+        HashMap sortedHashMap = new LinkedHashMap();
+        for (Iterator it = list.iterator(); it.hasNext(); ) {
+            Map.Entry entry = (Map.Entry) it.next();
+            sortedHashMap.put(entry.getKey(), entry.getValue());
+        }
+        return sortedHashMap;
     }
 
     @Override
     public void afterTextChanged(Editable editable) {
-
     }
 
-
-    private class ValueComparator implements Comparator<String> {
-        Map<String, Integer> base;
-
-        public ValueComparator(Map<String, Integer> base) {
-            this.base = base;
-        }
-
-        // Note: this comparator imposes orderings that are inconsistent with
-        // equals.
-        public int compare(String a, String b) {
-            if (base.get(a) <= base.get(b)) {
-                return -1;
-            } else {
-                return 1;
-            } // returning 0 would merge keys
-        }
-    }
 }
